@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+</head>
+
+<body>
+    <canvas id="canvas" width="1000" height="500">
+
+    </canvas>
+    <script>
+        const wall = document.getElementById("canvas");
+        //console.log(wall);
+        const ctx = wall.getContext("2d");
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, 1000, 500);
+        const squareSize = 100
+        ctx.strokeStyle = "white";
+
+        function pickRandom(array){
+            return array[Math.floor(array.length * Math.random())];
+        }
+
+        //your basic clamp
+        function clamp(x, xMin, xMax){
+            if (x > xMax){
+                return xMax
+            } else if (x < xMin){
+                return xMin
+            } else{
+                return x
+            }
+        }
+
+        //finds points around the circle
+        function makePoint(x, y, angle, xMin, xMax, yMin, yMax){
+            const r = Math.SQRT2*squareSize/2;
+            const newX = x + r * Math.cos(angle);
+            const newY = y + r * Math.sin(angle);
+            const clampX = clamp(newX, xMin, xMax);
+            const clampY = clamp(newY, yMin, yMax);
+            return [clampX, clampY]
+        }
+
+        //re-inventing vector maths so that we can draw our arcs
+        function addVector(a, b){
+            const x = a[0] + b[0];
+            const y = a[1] + b[1];
+            return [x, y];
+        }
+
+        function subtractVector(a, b){
+            const x = a[0] - b[0];
+            const y = a[1] - b[1];
+            return [x, y];
+        }
+
+        function perpVector(a){
+            const x = a[0];
+            const y = a[1];
+            return [y, -x];
+        }
+
+        function angleVector(a){
+            const x = a[0];
+            const y = a[1];
+            //just trust Peter about atan2
+            return Math.atan2(y, x);
+        }
+
+        function scaleVector(a, scale){
+            const x = a[0];
+            const y = a[1];
+            return [ x * scale, y * scale]
+        }
+
+        function averageVectors(a, b,){
+            const sum = addVector(a, b);
+            const scale = scaleVector(sum, .5);
+            return scale;
+        }
+
+        function getArcArguments (start, end){
+            const center = averageVectors(start, end);
+            const chord = subtractVector(end, start);
+            const offset = perpVector(chord);
+            const final = addVector(center, offset);
+            const a = subtractVector(start, final);
+            const b = subtractVector(end, final);
+            const startAngle = angleVector(a);
+            const endAngle = angleVector(b);
+            return [final[0], final[1], startAngle, endAngle];
+        }
+
+        function makeRandomMark(leftx, topy){
+            //choose a random type of mark, draw it
+            const x = leftx + squareSize / 2;
+            const y = topy + squareSize / 2;
+            const marks = ["line", "arc"];
+            const angles = [.5 * Math.PI, .25 * Math.PI, .75 * Math.PI, 0];
+            const mark = pickRandom(marks); 
+            const angle = pickRandom(angles);
+            const xMin = x - squareSize / 2;
+            const xMax = x + squareSize / 2;
+            const yMin = y - squareSize / 2;
+            const yMax = y + squareSize / 2;
+            const start = makePoint(x, y, angle, xMin, xMax, yMin, yMax);
+            const end = makePoint(x, y, angle + Math.PI, xMin, xMax, yMin, yMax);
+            const startx = start[0];
+            const starty = start[1];
+            const endx = end[0];
+            const endy = end[1];
+
+            
+            //console.log(mark, angle);
+            if(mark === "line"){
+                ctx.beginPath();
+                ctx.moveTo(startx, starty);
+                ctx.lineTo(endx, endy);
+                ctx.stroke();
+            } else if (mark === "arc"){
+                const args = getArcArguments(start, end);
+                ctx.beginPath();
+                ctx.arc(args[0], args[1], squareSize, args[3], args[2]);
+                ctx.stroke();
+            };
+        }
+        
+        function drawCell(x, y) {
+            //fill in one grid square
+            //make two random marks
+            ctx.fillStyle = `hsl(${360* Math.random()}, 65%, 55%)`
+            //ctx.fillRect(x, y, squareSize, squareSize);
+            makeRandomMark(x, y);
+            makeRandomMark(x,y);
+        }    
+        
+        //nested for loops to draw a grid
+        for(let y = 0; y < 500; y += squareSize){
+            //make row
+            for(let x = 0; x < 1000; x += squareSize){
+                //make column
+                drawCell(x, y);
+
+            }
+        };
+        
+
+    </script>
+</body>
+
+</html>
